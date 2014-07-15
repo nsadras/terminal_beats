@@ -45,13 +45,15 @@ def analyze(data, width, sample_rate, bins):
     
     return levels
 
-def visualize():
+def visualize(bins):
     
+        
+
     chunk    = 2048 # Change if too fast/slow, never less than 1024
-    scale    = 100   # Change if too dim/bright
-    exponent = .5    # Change if too little/too much difference between loud and quiet sounds
+    scale    = 300   # Change if too dim/bright
+    exponent = 1    # Change if too little/too much difference between loud and quiet sounds
     sample_rate = 44100 
-    device   = 2  # Change to correct input device; use list_devices()
+    device   = 0  # Change to correct input device; use list_devices()
     
     p = pyaudio.PyAudio()
     stream = p.open(format = pyaudio.paInt16,
@@ -63,37 +65,28 @@ def visualize():
     
     print "Starting, use Ctrl+C to stop"
     screen = curses.initscr()
-    curses.start_color()
-    curses.use_default_colors()
-
-    term_height = screen.getmaxyx()[0]
-    term_width = screen.getmaxyx()[1]
-
-    min_bar_height = 1
-    bar_width = 4
-    bar_spacing = 2
-    bins = term_width / (bar_width + bar_spacing) 
-
-    bars = []
     
-    for i in range(bins):
-        xcoord = bar_spacing + i*(bar_width + bar_spacing) 
-        bars.append(curses.newwin(min_bar_height, bar_width, 0, xcoord)) 
+    default_height = 5
+    ycoord = maxy - height
+    
+    bar1 = curses.newwin(20, 20, ycoord, 5)
+    bar2 = curses.newwin(20, 20, ycoord, 30)
+    bar3 = curses.newwin(20, 20, ycoord, 55)
+    bar4 = curses.newwin(20, 20, ycoord, 80)
 
-    #bars = [bar1, bar2, bar3, bar4, bar5, bar6, bar7]
+    box1.box()    
+    box2.box()
+    box3.box()
+    box4.box()
 
-    #colors
-    curses.init_pair(1, -1, curses.COLOR_BLUE)
-    curses.init_pair(2, -1, -1)
-    #draw stuff
-    #for i in range(len(bars)):
-    #    bars[i].box()
-        
     screen.refresh()
-    for i in range(bins):
-        bars[i].refresh()
+    box1.refresh()
+    box2.refresh()
+    box3.refresh()
+    box4.refresh()
+
+
     
-  
     try:
         on = False
         while True:
@@ -103,35 +96,21 @@ def visualize():
             for i in range(bins):
                 levels[i] = max(min((levels[i]*1.0)/scale, 1.0), 0.0)
                 levels[i] = levels[i]**exponent
-                levels[i] = int(levels[i]*term_height)
+                levels[i] = int(levels[i]*100)
             
-        
+            print levels
 
-            for i in range(bins):
-                height = levels[i]
-                prev_coords = bars[i].getbegyx()
-                bars[i].bkgd(' ', curses.color_pair(2))
-                bars[i].erase()
-                bars[i].refresh()
-         
-                bars[i] = curses.newwin( max(height, 2) , bar_width , 0  ,prev_coords[1])
-                
-                bars[i].bkgd(' ', curses.color_pair(1)) # set color     
-                bars[i].refresh()
+            #s.send(str(levels))
+            # draw levels to terminal
 
-            #screen.refresh()
-            for i in range(len(bars)):
-                bars[i].refresh()
-            
     except KeyboardInterrupt:
         pass
     finally:
         print "\nStopping"
         stream.close()
         p.terminate()
-        curses.endwin()
         #ser.close()
  
 if __name__ == '__main__':
     list_devices()
-    visualize()
+    visualize(4)
