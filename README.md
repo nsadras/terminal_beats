@@ -10,6 +10,11 @@ Instructions
 2.  Select desired input device from list
 3.  Revel in the fact that you have dancing bars inside your terminal
 
+Dependencies
+------------
++ numpy
++ [pyaudio](http://people.csail.mit.edu/hubert/pyaudio/)
+
 Tips
 ----
 + To use internal audio instead of mic input on macs, use [Soundflower](http://cycling74.com/products/soundflower/)
