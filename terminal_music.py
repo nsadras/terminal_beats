@@ -1,3 +1,4 @@
+#!/usr/bin/python
 """ based on code from arduino soundlight project """
 import pyaudio
 import numpy # for fft
@@ -10,7 +11,7 @@ import curses
 from socket import *
 
 def list_devices():
-    # List all audio input devices
+    """ List all audio input devices """
     p = pyaudio.PyAudio()
     i = 0
     n = p.get_device_count()
@@ -45,13 +46,11 @@ def analyze(data, width, sample_rate, bins):
     
     return levels
 
-def visualize():
-    
+def visualize(device):    
     chunk    = 2048 # Change if too fast/slow, never less than 1024
-    scale    = 100   # Change if too dim/bright
+    scale    = 200   # Change if bars too short/long
     exponent = .5    # Change if too little/too much difference between loud and quiet sounds
     sample_rate = 44100 
-    device   = 2  # Change to correct input device; use list_devices()
     
     p = pyaudio.PyAudio()
     stream = p.open(format = pyaudio.paInt16,
@@ -65,64 +64,62 @@ def visualize():
     screen = curses.initscr()
     curses.start_color()
     curses.use_default_colors()
-
+    curses.curs_set(0) # invisible cursor
+    curses.init_pair(1, -1, curses.COLOR_BLUE)
+    curses.init_pair(2, -1, -1)
+    
     term_height = screen.getmaxyx()[0]
     term_width = screen.getmaxyx()[1]
 
     min_bar_height = 1
     bar_width = 4
     bar_spacing = 2
+    vertical_offset = 2
     bins = term_width / (bar_width + bar_spacing) 
 
     bars = []
-    
     for i in range(bins):
         xcoord = bar_spacing + i*(bar_width + bar_spacing) 
-        bars.append(curses.newwin(min_bar_height, bar_width, 0, xcoord)) 
-
-    #bars = [bar1, bar2, bar3, bar4, bar5, bar6, bar7]
-
-    #colors
-    curses.init_pair(1, -1, curses.COLOR_BLUE)
-    curses.init_pair(2, -1, -1)
-    #draw stuff
-    #for i in range(len(bars)):
-    #    bars[i].box()
-        
-    screen.refresh()
-    for i in range(bins):
-        bars[i].refresh()
-    
-  
+        bars.append(curses.newwin(min_bar_height, bar_width, term_height - vertical_offset , xcoord)) 
+   
     try:
-        on = False
         while True:
+            # handle terminal resizing
+            if curses.is_term_resized(term_height, term_width): 
+                screen.clear()
+                screen.refresh()
+
+                term_height = screen.getmaxyx()[0]
+                term_width = screen.getmaxyx()[1]
+                
+                bins = term_width / (bar_width + bar_spacing)
+                bars = []
+                
+                for i in range(bins):
+                    xcoord = bar_spacing + i*(bar_width + bar_spacing) 
+                    bars.append(curses.newwin(min_bar_height, bar_width, term_height - vertical_offset, xcoord)) 
+
             data = stream.read(chunk)
             levels = analyze(data, chunk, sample_rate, bins)
-            # scale to [0,100]
+ 
             for i in range(bins):
-                levels[i] = max(min((levels[i]*1.0)/scale, 1.0), 0.0)
-                levels[i] = levels[i]**exponent
-                levels[i] = int(levels[i]*term_height)
-            
-        
-
-            for i in range(bins):
-                height = levels[i]
+                height = max(min((levels[i]*1.0)/scale, 1.0), 0.0)
+                height = height**exponent
+                height = int(height*term_height*1.5)
+                
                 prev_coords = bars[i].getbegyx()
-                bars[i].bkgd(' ', curses.color_pair(2))
+                prev_bar_height = bars[i].getmaxyx()[0]
+
+                bars[i].bkgd(' ', curses.color_pair(2)) # recolor to default
                 bars[i].erase()
                 bars[i].refresh()
-         
-                bars[i] = curses.newwin( max(height, 2) , bar_width , 0  ,prev_coords[1])
-                
+        
+                new_bar_height = max(height, min_bar_height)
+                bars[i] = curses.newwin(new_bar_height, bar_width, prev_coords[0] - (new_bar_height - prev_bar_height) , prev_coords[1]) 
                 bars[i].bkgd(' ', curses.color_pair(1)) # set color     
                 bars[i].refresh()
-
-            #screen.refresh()
-            for i in range(len(bars)):
-                bars[i].refresh()
             
+
     except KeyboardInterrupt:
         pass
     finally:
@@ -130,8 +127,16 @@ def visualize():
         stream.close()
         p.terminate()
         curses.endwin()
-        #ser.close()
- 
-if __name__ == '__main__':
+
+def main():
     list_devices()
-    visualize()
+    device = None
+    while not device:
+        try:
+            device = int(raw_input("Enter device number for desired audio source: "))
+        except ValueError:
+            print "not a number"
+    visualize(device)
+
+if __name__ == '__main__':
+    main()    
