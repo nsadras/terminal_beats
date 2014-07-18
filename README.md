@@ -2,7 +2,14 @@ Terminal Beats
 --------------
 A music visualizer that runs in your terminal
 
+![Screenshot](http://i.imgur.com/FCWElx6.png)
+
 Instructions
 ------------
-+ Run `terminal_music.py`
-+ Change device number in the script to select audio source
+1.  Run `terminal_music.py`
+2.  Select desired input device from list
+3.  Revel in the fact that you have dancing bars inside your terminal
+
+Tips
+----
++ To use internal audio instead of mic input on macs, use [Soundflower](http://cycling74.com/products/soundflower/)
